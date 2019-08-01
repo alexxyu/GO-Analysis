@@ -1,5 +1,6 @@
 library(GO.db, quietly = TRUE, warn.conflicts = FALSE)
 
+#Outputs terms that are both in the given set of terms and the data file
 outputIntersection <- function(set) {
 
     con <- file('data/go_terms.txt', open = 'r')
@@ -15,13 +16,17 @@ outputIntersection <- function(set) {
 
 args <- commandArgs(trailingOnly=TRUE)
 
+#Makes sures enough arguments are supplied
 if (length(args)<2) {
-  stop("At least two arguments must be supplied", call.=FALSE)
+  stop("Two arguments must be supplied", call.=FALSE)
 }
 
 goTerm <- args[1]
 func <- args[2]
 
+#Second argument determines whether offspring or ancestor terms are filtered
+#0: offspring filtered out
+#1: ancestors filtered out
 if (func == 0) {
     offspring = GOBPOFFSPRING[[goTerm]]
     outputIntersection(offspring)

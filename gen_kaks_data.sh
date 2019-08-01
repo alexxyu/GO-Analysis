@@ -1,4 +1,12 @@
 #!/bin/bash
+#Generates Ka/Ks ratio among orthologous gene pairs between two species and outputs list of
+#genes with evidence of positive selection (Ka/Ks > 1 and p < 0.1)
+
+#Run using: bash gen_kaks_data.sh [species1] [species2] [GO term(s)] [query id]
+#Species name can be found from dataSpecies.txt file in the data directory
+#Query id can be anything
+
+#Example: bash gen_kaks_data.sh GuineaPig Opossum GO:0004407,GO:1901727 histone_deacetylase
 
 download_seqs()
 {
@@ -11,11 +19,12 @@ download_seqs()
     goterms=\"$goterms\"
 
     filename=$3
-    wget -O $3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "peptide" /> <Attribute name = "ensembl_peptide_id" /> <Attribute name = "ensembl_gene_id" /> <Attribute name = "ensembl_transcript_id" /> <Attribute name = "gene_biotype" /> <Attribute name = "external_gene_name" /> <Attribute name = "description" /> </Dataset> </Query>'
+    wget -O $3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "peptide" /> <Attribute name = "ensembl_peptide_id" /> <Attribute name = "ensembl_gene_id" /> <Attribute name = "ensembl_transcript_id" /> <Attribute name = "gene_biotype" /> <Attribute name = "external_gene_name" /> <Attribute name = "description" /> </Dataset> </Query>'
 }
 
 run_OMA()
 {
+    #Prepares and runs OMA on species genomes
     mkdir -p OMA
     cp data/parameters.drw OMA
     mkdir -p OMA/DB
@@ -62,7 +71,7 @@ mkdir -p kaksData
 mkdir -p filteredGenes
 python export_data.py $species1 $species2 $queryid
 
-rm -rf OMA
+#rm -rf OMA
 rm -rf output
 
 end=$SECONDS

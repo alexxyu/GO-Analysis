@@ -14,19 +14,18 @@ path = r'output'
 all_files = sorted(glob.glob(path + "/*.kaks"))
 all_files = sorted(all_files, key=lambda name: int(name[13:-5]))
 
+#Concatenates all the Ka/Ks data for each gene pair into one dataframe and saves it to file
 li = []
-
 for filename in all_files:
     df = pd.read_csv(filename, index_col=None, header=0, sep='\t')
     li.append(df)
-
 data = pd.concat(li, axis=0, ignore_index=True)
 data.to_csv('kaksData/' + outFile, sep='\t')
 
 sig_data = data[(data['Ka/Ks'] > 1) & (data['P-Value(Fisher)'] < 0.1)]
 
+#Outputs genes with evidence of positive selection to output file and formats parameters
 gene_df = pd.DataFrame(columns=['Protein', 'Symbol', 'Pair Number', animal_name1 + 'Protein', animal_name2 + 'Protein','Ka/Ks', 'P-Value'])
-
 for index, row in sig_data.iterrows():
     
     file = open("OMA/Output/OrthologousGroupsFasta/OG{0}.fa".format(index), mode='r')

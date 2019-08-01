@@ -23,6 +23,7 @@ countGOTerms()
     wait
     while read -r species; do
         
+        #Ensures that the relevant species data file is fully downloaded
         lastLine=$(awk '/./{line=$0} END{print line}' count/$species.fa)
         while [[ $lastLine != "[success]" ]]; do
             sleep 5
@@ -32,6 +33,7 @@ countGOTerms()
         numTerms=$(wc -l count/$species.fa | awk '{print $1}')
         numTerms=$(( numTerms - 1 ))
         echo "${numTerms}" >> countData/count\_$queryid.txt
+
     done < "$input"
 }
 
@@ -66,6 +68,11 @@ fi
 start=$SECONDS
 mkdir -p count
 mkdir -p countData
+
+if [[ -e countData/count\_$2.txt ]]; then
+    #echo "File already found."
+    exit 1
+fi
 
 countGOTerms $1 $2
 

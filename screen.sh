@@ -1,6 +1,6 @@
 #!/bin/bash
 
-download_seqs()
+download_genes()
 {
     #Dataset name from Ensembl
     dataset=$1
@@ -12,7 +12,6 @@ download_seqs()
 
 
     wget -o /dev/null -O $species.fa 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "ensembl_gene_id" /> </Dataset> </Query>'
-    #wget -o /dev/null -O $species.fa 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "peptide" /> <Attribute name = "ensembl_peptide_id" /> </Dataset> </Query>'
     mv $species.fa count/$species.fa
 }
 
@@ -37,9 +36,10 @@ while read -r term; do
     if grep -q $term banList.txt; then
         continue
     else
+    
         echo "Working on GO term" $term
-        download_seqs $dataset $term $species
-        numTerms=$(wc -l count/$species.fa)
+        download_genes $dataset $term $species
+        numTerms=$(wc -l count/$species.fa | awk '{print $1}')
         
         if [ "${numTerms% *}" -gt 120 ]; then
             #Remove ancestor terms since they will have more terms
