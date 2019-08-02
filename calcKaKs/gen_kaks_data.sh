@@ -71,7 +71,7 @@ mkdir -p kaksData
 mkdir -p filteredGenes
 python export_data.py $species1 $species2 $queryid
 
-#rm -rf OMA
+rm -rf OMA
 rm -rf output
 
 end=$SECONDS

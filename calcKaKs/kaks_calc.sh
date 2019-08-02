@@ -82,6 +82,7 @@ if [ $# -eq 1 ]; then
 else
     echo "Error: The input for the program is just the filename of the orthologue pairs of amino acid sequences."
 fi
+
 end=$SECONDS
 elapsed=$(( end - start ))
 convertsecs $elapsed
