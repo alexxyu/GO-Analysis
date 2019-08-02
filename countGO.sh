@@ -3,6 +3,8 @@
 #For multiple GO terms, enter them separated by only a comma
 #Example: bash countGO.sh GO:1902991,GO:1902992 test
 
+#Must have wget installed
+
 countGOTerms()
 {
     queryid=$2
@@ -26,7 +28,14 @@ countGOTerms()
         #Ensures that the relevant species data file is fully downloaded
         lastLine=$(awk '/./{line=$0} END{print line}' count/$species.fa)
         while [[ $lastLine != "[success]" ]]; do
-            sleep 5
+
+            if [[ $lastLine == *"ERROR 500: Internal Server Error."* ]]; then
+                echo "Server error thrown. Skipping current GO term."
+                rm countData/count\_$queryid.txt
+                exit 1
+            fi
+
+            sleep 3
             lastLine=$(awk '/./{line=$0} END{print line}' count/$species.fa)
         done
 
@@ -47,7 +56,7 @@ download_genes()
     goterms=$2
     goterms=\"$goterms\"
 
-    wget -b -o /dev/null -O $species.fa 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "ensembl_gene_id" /> </Dataset> </Query>' > /dev/null
+    wget -b -o debug/$species.txt -O $species.fa --timeout=300 --tries=3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "ensembl_gene_id" /> </Dataset> </Query>' > /dev/null
     mv $species.fa count/$species.fa
 }
 
@@ -56,7 +65,7 @@ convertsecs()
     ((h=${1}/3600))
     ((m=(${1}%3600)/60))
     ((s=${1}%60))
-    printf "Elapsed time for total process: %02d:%02d:%02d\n" $h $m $s
+    printf "Elapsed time: %02d:%02d:%02d\n" $h $m $s
 }
 
 if [ $# -lt 2 ]; then
@@ -68,6 +77,7 @@ fi
 start=$SECONDS
 mkdir -p count
 mkdir -p countData
+mkdir -p debug
 
 if [[ -e countData/count\_$2.txt ]]; then
     #echo "File already found."
