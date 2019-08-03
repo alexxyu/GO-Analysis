@@ -11,7 +11,10 @@ opSize=$(wc -l $input | awk '{print $1}')
 counter=1
 
 while read -r term; do
-    echo "Working on GO term" $term "("$counter "of" $opSize")."; echo;
+    echo "Working on GO term" $term "("$counter "of" $opSize")."
     bash countGO.sh $term ${term:3}
     let counter++
+    echo
 done < "$input"
+
+python GOAnalysis.py

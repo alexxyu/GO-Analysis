@@ -5,7 +5,7 @@
 
 #Must have wget installed
 
-countGOTerms()
+count_GO_Terms()
 {
     queryid=$2
 
@@ -29,7 +29,8 @@ countGOTerms()
         lastLine=$(awk '/./{line=$0} END{print line}' count/$species.fa)
         while [[ $lastLine != "[success]" ]]; do
 
-            if [[ $lastLine == *"ERROR 500: Internal Server Error."* ]]; then
+            debugLine=$(awk '/./{line=$0} END{print line}' debug/$species.txt)
+            if [[ $debugLine == *"ERROR 500: Internal Server Error."* ]] || [[ $debugLine == *"unable to resolve host address"* ]] ; then
                 echo "Server error thrown. Skipping current GO term."
                 rm countData/count\_$queryid.txt
                 exit 1
@@ -60,7 +61,28 @@ download_genes()
     mv $species.fa count/$species.fa
 }
 
-convertsecs()
+validate_file()
+{
+
+    file="countData/count_$1.txt"
+    if [[ -e $file ]]; then
+
+        #echo "File already found."
+
+        speciesNum=$(wc -l data/dataSpecies.txt | awk '{print $1}')
+        lineCount=$(wc -l $file | awk '{print $1}')
+        if [ $lineCount -ne $speciesNum ]; then
+            rm $file
+            echo $file "does not contain the right number of terms. Deleted and will re-calculate."
+        else
+            exit 0
+        fi
+
+    fi
+
+}
+
+convert_secs()
 {
     ((h=${1}/3600))
     ((m=(${1}%3600)/60))
@@ -75,21 +97,16 @@ if [ $# -lt 2 ]; then
 fi
 
 start=$SECONDS
+
 mkdir -p count
 mkdir -p countData
 mkdir -p debug
 
-if [[ -e countData/count\_$2.txt ]]; then
-    #echo "File already found."
-    exit 1
-fi
-
-countGOTerms $1 $2
+validate_file $2
+count_GO_Terms $1 $2
 
 rm -rf count
 
 end=$SECONDS
 elapsed=$(( end - start ))
-convertsecs $elapsed
-
-exit 0
+convert_secs $elapsed
