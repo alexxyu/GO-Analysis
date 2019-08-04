@@ -1,4 +1,5 @@
-library(GO.db, quietly = TRUE, warn.conflicts = FALSE)
+#!/usr/bin/env Rscript
+suppressMessages(library(GO.db))
 
 #Outputs terms that are both in the given set of terms and the data file
 outputIntersection <- function(set) {
@@ -8,7 +9,7 @@ outputIntersection <- function(set) {
         line <- readLines(con, n = 1)
         if(length(line) == 0) break
         else if(line %in% set){
-            write(line, file = "banList.txt", append = TRUE)
+            write(line, file = "data/banList.txt", append = TRUE)
         } 
     }
     

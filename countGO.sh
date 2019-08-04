@@ -3,7 +3,7 @@
 #For multiple GO terms, enter them separated by only a comma
 #Example: bash countGO.sh GO:1902991,GO:1902992 test
 
-#Must have wget installed
+#Must have wget installed.
 
 count_GO_Terms()
 {
@@ -27,10 +27,10 @@ count_GO_Terms()
         
         #Ensures that the relevant species data file is fully downloaded
         lastLine=$(awk '/./{line=$0} END{print line}' count/$species.fa)
-        while [[ $lastLine != "[success]" ]]; do
+        while [[ "$lastLine" != "[success]" ]]; do
 
             debugLine=$(awk '/./{line=$0} END{print line}' debug/$species.txt)
-            if [[ $debugLine == *"ERROR 500: Internal Server Error."* ]] || [[ $debugLine == *"unable to resolve host address"* ]] ; then
+            if [[ "$debugLine" == *"ERROR 500: Internal Server Error."* ]] || [[ "$debugLine" == *"unable to resolve host address"* ]] ; then
                 echo "Server error thrown. Skipping current GO term."
                 rm countData/count\_$queryid.txt
                 exit 1

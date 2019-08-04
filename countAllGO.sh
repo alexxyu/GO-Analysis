@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#Must have wget installed.
+
 if [ $# -lt 1 ]; then
     echo "Error -- Program takes arguments as follows: "
     echo "bash countAllGO.sh [Path to file containing GO terms]"
@@ -17,4 +19,4 @@ while read -r term; do
     echo
 done < "$input"
 
-python GOAnalysis.py
+python GOAnalysis.py 0.05
