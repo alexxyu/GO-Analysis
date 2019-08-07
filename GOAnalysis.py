@@ -9,11 +9,14 @@ import sys
 
 pd.options.mode.chained_assignment = None
 
-if len(sys.argv) < 2:
-    print('Error: Have to specify alpha value.')
+#Requires 2 inputs: alpha value and output filename
+#Call: python GOAnalysis.py [alpha value] [output filename]
+if len(sys.argv) < 3:
+    print('Error: Have to specify alpha value and output filename.')
     exit()
 
 alpha = float(sys.argv[1])
+out_filename = sys.argv[2]
 
 #Reads different data files relevant to analysis
 raw_data = pd.read_csv('data/anage_data.txt', sep="\t")
@@ -44,7 +47,8 @@ genned_data = genned_data.drop(198)
 oboDat = obo_parser.GODag('data/go-basic.obo')
 
 #Creates new dataframe with GO terms with significant Spearman correlation
-path = r'/Users/alexyu/Downloads/kaks/countData'
+path = r'countData'
+path_len = len(path) + len('count_') + 1
 all_files = glob.glob(path + "/*.txt")
 go_df = pd.DataFrame(columns=['GO ID', 'GO Definition', 'Median Gene #', 'Spearman Coef', 'P-Value'])
 for filename in all_files:
@@ -52,13 +56,16 @@ for filename in all_files:
     term = pd.read_csv(filename, sep='\t', header=None).values
 
     #Reads and formats data for data export
-    genned_data[filename[45:-4]] = pd.read_csv(filename, sep='\t', header=None).values[:-2]
-    coef, p = spearmanr(genned_data['NL'], genned_data[filename[45:-4]]/genned_data['Total'])
+    try:
+        genned_data[filename[path_len:-4]] = pd.read_csv(filename, sep='\t', header = None).values[:-2]
+    except:
+        print('Error: %s contains a wrong number of terms. Term skipped.' % filename)
+        continue
+    coef, p = spearmanr(genned_data['NL'], genned_data[filename[path_len:-4]]/genned_data['Total'])
 
     #Adds terms only if it is significant
     if p < alpha and coef > 0:
-        go_df.loc[len(go_df)] = ["GO:"+filename[45:-4], oboDat["GO:"+filename[45:-4]].name, np.median(term), coef, p]
-        go_df.to_csv('data/sigGOTerms.txt', sep='\t')
+        go_df.loc[len(go_df)] = ["GO:"+filename[path_len:-4], oboDat["GO:"+filename[path_len:-4]].name, np.median(term), coef, p]
 
 print('Found %i term(s) to be significant.' % len(go_df))
-go_df.to_csv('data/sigGOTerms.txt', sep='\t')
+go_df.to_csv('output/' + out_filename, sep='\t')
