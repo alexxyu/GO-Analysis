@@ -36,7 +36,7 @@ data = data[np.isfinite(data['Metabolic rate (W)'])]
 #Calculates normalized lifespan measurement
 mammals_and_birds = data[(data['Class']!='Reptilia') & (data['Class']!='Amphibia')]
 slope, intercept, r_value, p_value, std_err = linregress(np.log(mammals_and_birds['Metabolic rate (W)']/mammals_and_birds['Body mass (g)']), np.log(mammals_and_birds['Maximum longevity (yrs)']))
-data['NL'] = data['Maximum longevity (yrs)'] / (data['Metabolic rate (W)']/data['Body mass (g)']) ** (-slope)
+data['NL'] = data['Maximum longevity (yrs)'] / (data['Metabolic rate (W)']/data['Body mass (g)']) ** (-alpha)
 mammals_and_birds = data[(data['Class']!='Reptilia') & (data['Class']!='Amphibia')]
 
 #Filters for animals with genomes sequenced and cleans up data
@@ -51,9 +51,11 @@ path = r'countData'
 path_len = len(path) + len('count_') + 1
 all_files = glob.glob(path + "/*.txt")
 go_df = pd.DataFrame(columns=['GO ID', 'GO Definition', 'Median Gene #', 'Spearman Coef', 'P-Value'])
-for filename in all_files:
 
-    term = pd.read_csv(filename, sep='\t', header=None).values
+if not os.path.exists('output'):
+    os.makedirs('output')
+
+for filename in all_files:
 
     #Reads and formats data for data export
     try:
