@@ -60,14 +60,13 @@ for filename in all_files:
     #Reads and formats data for data export
     try:
         genned_data[filename[path_len:-4]] = pd.read_csv(filename, sep='\t', header = None).values[:-2]
+        coef, p = spearmanr(genned_data['NL'], genned_data[filename[path_len:-4]]/genned_data['Total'])
+
+        #Adds terms only if it is significant
+        if p < alpha and coef > 0:
+            go_df.loc[len(go_df)] = ["GO:"+filename[path_len:-4], oboDat["GO:"+filename[path_len:-4]].name, np.median(genned_data[filename[path_len:-4]]), coef, p]
     except:
         print('Error: %s contains a wrong number of terms. Term skipped.' % filename)
-        continue
-    coef, p = spearmanr(genned_data['NL'], genned_data[filename[path_len:-4]]/genned_data['Total'])
-
-    #Adds terms only if it is significant
-    if p < alpha and coef > 0:
-        go_df.loc[len(go_df)] = ["GO:"+filename[path_len:-4], oboDat["GO:"+filename[path_len:-4]].name, np.median(term), coef, p]
 
 print('Found %i term(s) to be significant.' % len(go_df))
 go_df.to_csv('output/' + out_filename, sep='\t')
