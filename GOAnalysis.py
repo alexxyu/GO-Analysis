@@ -9,14 +9,13 @@ import sys
 
 pd.options.mode.chained_assignment = None
 
-#Requires 2 inputs: alpha value and output filename
-#Call: python GOAnalysis.py [alpha value] [output filename]
-if len(sys.argv) < 3:
-    print('Error: Have to specify alpha value and output filename.')
+#Requires 1 input: output filename
+#Call: python GOAnalysis.py [output filename]
+if len(sys.argv) < 2:
+    print('Error: Have to specify output filename.')
     exit()
 
-alpha = float(sys.argv[1])
-out_filename = sys.argv[2]
+out_filename = sys.argv[1]
 
 #Reads different data files relevant to analysis
 raw_data = pd.read_csv('data/anage_data.txt', sep="\t")
@@ -36,7 +35,7 @@ data = data[np.isfinite(data['Metabolic rate (W)'])]
 #Calculates normalized lifespan measurement
 mammals_and_birds = data[(data['Class']!='Reptilia') & (data['Class']!='Amphibia')]
 slope, intercept, r_value, p_value, std_err = linregress(np.log(mammals_and_birds['Metabolic rate (W)']/mammals_and_birds['Body mass (g)']), np.log(mammals_and_birds['Maximum longevity (yrs)']))
-data['NL'] = data['Maximum longevity (yrs)'] / (data['Metabolic rate (W)']/data['Body mass (g)']) ** (-alpha)
+data['NL'] = data['Maximum longevity (yrs)'] / (data['Metabolic rate (W)']/data['Body mass (g)']) ** (-1)
 mammals_and_birds = data[(data['Class']!='Reptilia') & (data['Class']!='Amphibia')]
 
 #Filters for animals with genomes sequenced and cleans up data
@@ -60,13 +59,12 @@ for filename in all_files:
     #Reads and formats data for data export
     try:
         genned_data[filename[path_len:-4]] = pd.read_csv(filename, sep='\t', header = None).values[:-2]
-        coef, p = spearmanr(genned_data['NL'], genned_data[filename[path_len:-4]]/genned_data['Total'])
+        coef, p = spearmanr(genned_data['Maximum longevity (yrs)'], genned_data[filename[path_len:-4]]/genned_data['Protein_Coding'])
 
-        #Adds terms only if it is significant
-        if p < alpha and coef > 0:
-            go_df.loc[len(go_df)] = ["GO:"+filename[path_len:-4], oboDat["GO:"+filename[path_len:-4]].name, np.median(genned_data[filename[path_len:-4]]), coef, p]
+        go_df.loc[len(go_df)] = ["GO:"+filename[path_len:-4], oboDat["GO:"+filename[path_len:-4]].name, np.median(genned_data[filename[path_len:-4]]), coef, p]
+
     except:
         print('Error: %s contains a wrong number of terms. Term skipped.' % filename)
 
-print('Found %i term(s) to be significant.' % len(go_df))
+print('Found %i term(s) to output.' % len(go_df))
 go_df.to_csv('output/' + out_filename, sep='\t')
