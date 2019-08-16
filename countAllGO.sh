@@ -2,9 +2,9 @@
 
 #Must have wget installed.
 
-if [ $# -lt 3 ]; then
+if [ $# -lt 2 ]; then
     echo "Error -- Program takes arguments as follows: "
-    echo "bash countAllGO.sh [Path to file containing GO terms] [alpha value] [output filename]"
+    echo "bash countAllGO.sh [Path to file containing GO terms] [output filename]"
     exit 1
 fi
 
@@ -20,4 +20,4 @@ while read -r term; do
 done < "$input"
 
 mkdir -p output
-python GOAnalysis.py $2 $3
+python GOAnalysis.py $2
