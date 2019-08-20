@@ -52,11 +52,11 @@ This will generate an output file in data/filteredTerms.txt that can be used for
 
 #### Counting Genes Under Each GO Term for All Species
 
-Run the countAllGO.sh script. The one argument that it takes is the path to the file containing GO terms to check and count.
+Run the countAllGO.sh script. The two arguments that it takes are the path to the file containing GO terms to count and the output filename.
 ```
-bash countAllGO.sh data/filteredTerms.txt 0.05 sigGOTerms.txt
+bash countAllGO.sh data/filteredTerms.txt sigGOTerms.txt
 ```
-This will generate a directory of count data. For correlation analysis, it calls GOAnalysis.py, which calculates normalized lifespan based on a linear regression model between BMR/M and lifespan and then calculates Spearman's rank correlation coefficient with p-value.
+This will generate a directory of count data. For correlation analysis, it calls GOAnalysis.py, which calculates normalized lifespan based on a linear regression model between BMR/M and lifespan and then calculates Spearman's rank correlation coefficient with p-value. GOAnalysis.py will output an entire tab-delimited text file with counts, which can be analyzed in Python, R, etc.
 
 ## Other Dependencies
 
