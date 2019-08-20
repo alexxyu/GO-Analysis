@@ -27,6 +27,8 @@ elif ((l_symbol != 'NLa') and (l_symbol != 'NLn1')):
     print('Normalized lifespan by -1: NLn1')
     print('')
     exit()
+else:
+    life_measure = l_symbol
 
 out_filename = sys.argv[2]
 
@@ -75,7 +77,7 @@ for filename in all_files:
     #Drops reptiles from dataset
     try:
         genned_data[filename[path_len:-4]] = pd.read_csv(filename, sep='\t', header = None).values
-        coef, p = spearmanr(genned_data[l_symbol].drop([44,45]), genned_data[filename[path_len:-4]].drop([44,45])/genned_data['Protein_Coding'].drop([44,45]))
+        coef, p = spearmanr(genned_data[life_measure].drop([44,45]), genned_data[filename[path_len:-4]].drop([44,45]))
 
         go_df.loc[len(go_df)] = ["GO:"+filename[path_len:-4], oboDat["GO:"+filename[path_len:-4]].name, np.median(genned_data[filename[path_len:-4]]), coef, p]
 
