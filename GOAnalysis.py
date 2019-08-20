@@ -10,12 +10,25 @@ import sys
 pd.options.mode.chained_assignment = None
 
 #Requires 1 input: output filename
-#Call: python GOAnalysis.py [output filename]
-if len(sys.argv) < 2:
-    print('Error: Have to specify output filename.')
+#Call: python GOAnalysis.py [Lifespan measure] [output filename]
+if len(sys.argv) < 3:
+    print('Error: Have to specify which lifespan measurement to use and output filename.')
+    print('')
     exit()
 
-out_filename = sys.argv[1]
+l_symbol = sys.argv[1]
+life_measure = ''
+if l_symbol == 'ML':
+    life_measure = 'Maximum longevity (yrs)'
+elif ((l_symbol != 'NLa') and (l_symbol != 'NLn1')):
+    print('Error: Not a valid measurement specified.')
+    print('Maximum longevity: ML')
+    print('Normalized lifespan by alpha: NLa')
+    print('Normalized lifespan by -1: NLn1')
+    print('')
+    exit()
+
+out_filename = sys.argv[2]
 
 #Reads different data files relevant to analysis
 raw_data = pd.read_csv('data/anage_data.txt', sep="\t")
@@ -35,13 +48,15 @@ data = data[np.isfinite(data['Metabolic rate (W)'])]
 #Calculates normalized lifespan measurement
 mammals_and_birds = data[(data['Class']!='Reptilia') & (data['Class']!='Amphibia')]
 slope, intercept, r_value, p_value, std_err = linregress(np.log(mammals_and_birds['Metabolic rate (W)']/mammals_and_birds['Body mass (g)']), np.log(mammals_and_birds['Maximum longevity (yrs)']))
-data['NL'] = data['Maximum longevity (yrs)'] / (data['Metabolic rate (W)']/data['Body mass (g)']) ** (-1)
+data['NLa'] = data['Maximum longevity (yrs)'] / (data['Metabolic rate (W)']/data['Body mass (g)']) ** (-slope)
+data['NLn1'] = data['Maximum longevity (yrs)'] / (data['Metabolic rate (W)']/data['Body mass (g)']) ** (-1)
 mammals_and_birds = data[(data['Class']!='Reptilia') & (data['Class']!='Amphibia')]
 
 #Filters for animals with genomes sequenced and cleans up data
-genned_data = mammals_and_birds[mammals_and_birds['Genome']==1]
-genned_data = genned_data[np.isfinite(genned_data['Total'])]
-genned_data = genned_data.drop(198)
+genned_data = data[data['Genome']==1]
+genned_data = genned_data.drop_duplicates(subset=['Common name'], keep="first")
+genned_data = genned_data.reset_index(drop=True)
+genned_data = genned_data.reindex([5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,4,1,2,0,3,24])
 
 oboDat = obo_parser.GODag('data/go-basic.obo')
 
@@ -57,9 +72,10 @@ if not os.path.exists('output'):
 for filename in all_files:
 
     #Reads and formats data for data export
+    #Drops reptiles from dataset
     try:
-        genned_data[filename[path_len:-4]] = pd.read_csv(filename, sep='\t', header = None).values[:-2]
-        coef, p = spearmanr(genned_data['Maximum longevity (yrs)'], genned_data[filename[path_len:-4]]/genned_data['Protein_Coding'])
+        genned_data[filename[path_len:-4]] = pd.read_csv(filename, sep='\t', header = None).values
+        coef, p = spearmanr(genned_data[l_symbol].drop([44,45]), genned_data[filename[path_len:-4]].drop([44,45])/genned_data['Protein_Coding'].drop([44,45]))
 
         go_df.loc[len(go_df)] = ["GO:"+filename[path_len:-4], oboDat["GO:"+filename[path_len:-4]].name, np.median(genned_data[filename[path_len:-4]]), coef, p]
 
