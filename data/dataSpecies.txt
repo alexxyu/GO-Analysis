@@ -36,8 +36,6 @@ Rat
 Degu
 Squirrel
 Shrew
-Tuatara
-PaintedTurtle
 BengaleseFinch
 Chicken
 DarkEyedJunco
