@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #Must have wget installed.
+#Takes input file of GO terms.
 
 if [ $# -lt 2 ]; then
     echo "Error -- Program takes arguments as follows: "
@@ -20,4 +21,9 @@ while read -r term; do
 done < "$input"
 
 mkdir -p output
+
+echo "Condensing raw count data into one file..."
+python condense_data.py
+
+echo "Outputing significant terms..."
 python GOAnalysis.py $2

@@ -1,7 +1,7 @@
 #!/bin/bash
-#To use: bash countGO.sh [GO Term(s)] [unique query id]
+#To use: ./countGO.sh [GO Term(s)] [unique query id]
 #For multiple GO terms, enter them separated by only a comma
-#Example: bash countGO.sh GO:1902991,GO:1902992 test
+#Example: ./countGO.sh GO:1902991,GO:1902992 test
 
 #Must have wget installed.
 
@@ -63,17 +63,17 @@ download_genes()
 
 validate_file()
 {
-
+    #First checks if file already exists. If so, then checks if it contains correct number of lines.
+    #If not, deletes and re-calculates. If so, skips.
     file="countData/count_$1.txt"
     if [[ -e $file ]]; then
 
-        #echo "File already found."
-
         speciesNum=$(wc -l data/dataSpecies.txt | awk '{print $1}')
         lineCount=$(wc -l $file | awk '{print $1}')
-        if [ $lineCount -ne $speciesNum ]; then
+        if [[ $lineCount -ne $speciesNum ]]; then
             rm $file
             echo $file "does not contain the right number of terms. Deleted and will re-calculate."
+            printf ""
         else
             exit 0
         fi
@@ -106,6 +106,7 @@ validate_file $2
 count_GO_Terms $1 $2
 
 rm -rf count
+rm -rf debug
 
 end=$SECONDS
 elapsed=$(( end - start ))

@@ -12,9 +12,11 @@ screen()
     lowerBound=$3
     upperBound=$4
 
-    dataset=$(python get_dataset.py $species)
+    dataset=$5
 
     while read -r term; do
+
+        dataset=$5
 
         if grep -q $term data/banList.txt; then
             continue
@@ -26,12 +28,12 @@ screen()
             
             if [ $numTerms -gt $upperBound ]; then
                 #Remove ancestor terms since they will have more terms
-                echo "Removing ancestor terms."
-                Rscript filter.R $term 1
+                echo "Found "$numTerms "terms. Removing ancestor terms."; echo
+                Rscript filter.R $term 1 $1
             elif [ $numTerms -lt $lowerBound ]; then
                 #Remove descendant terms since they will have fewer terms
-                echo "Removing descendant terms."
-                Rscript filter.R $term 0
+                echo "Found "$numTerms "terms. Removing descendant terms."; echo
+                Rscript filter.R $term 0 $1
             else
                 echo "${term}" >> data/filteredTerms.txt
             fi
@@ -74,10 +76,11 @@ fi
 start=$SECONDS
 
 mkdir -p count
-touch banList.txt
-mv banList.txt data/banList.txt
+# touch banList.txt
+# mv banList.txt data/banList.txt
 
-screen $1 $2 $3 $4
+dataset=$(python get_dataset.py $2)
+screen $1 $2 $3 $4 $dataset
 
 rm -rf count
 
