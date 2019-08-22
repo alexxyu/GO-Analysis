@@ -18,13 +18,14 @@ screen()
 
         dataset=$5
 
+        #Skip banned / already-checked terms
         if grep -q $term data/banList.txt; then
             continue
         else
 
             echo "Working on GO term" $term"."
             download_genes $dataset $term $species
-            numTerms=$(wc -l count/$species.fa | awk '{print $1}')
+            numTerms=$(wc -l $species.fa | awk '{print $1}')
             
             if [ $numTerms -gt $upperBound ]; then
                 #Remove ancestor terms since they will have more terms
@@ -39,6 +40,7 @@ screen()
             fi
 
             echo "${term}" >> data/banList.txt
+            rm $species.fa
 
         fi
     
@@ -56,7 +58,6 @@ download_genes()
     goterms=\"$goterms\"
 
     wget -o /dev/null -O $species.fa 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "ensembl_gene_id" /> </Dataset> </Query>'
-    mv $species.fa count/$species.fa
 }
 
 convert_secs()
@@ -75,14 +76,11 @@ fi
 
 start=$SECONDS
 
-mkdir -p count
-# touch banList.txt
-# mv banList.txt data/banList.txt
+touch banList.txt
+mv banList.txt data/banList.txt
 
 dataset=$(python get_dataset.py $2)
 screen $1 $2 $3 $4 $dataset
-
-rm -rf count
 
 end=$SECONDS
 elapsed=$(( end - start ))
