@@ -42,5 +42,3 @@ Rat=3.8
 Degu=14.0
 Squirrel=7.9
 Shrew=3.2
-Tuatara=90.0
-PaintedTurtle=61.0

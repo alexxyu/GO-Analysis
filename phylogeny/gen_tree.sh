@@ -1,4 +1,7 @@
 #!/bin/bash
+#Must have kalign and wget installed.
+
+#Run using: ./gen_tree.sh [GO Term ID]
 
 get_data()
 {
@@ -7,7 +10,6 @@ get_data()
     id=${goterms:3}
 
     #Downloads and prepares data for MSA
-    #download_index $goterms
     download_genesets $goterms
     format_files
 
@@ -16,21 +18,11 @@ get_data()
     ./trimal -in msa.afa -out msa.afa -gappyout
     ./muscle -maketree -in msa.afa -out tree\_$id.phy
 
-}
-
-download_index()
-{
-
-    echo "Downloading index data..."
-    echo "Complete."; echo ""
-
-    mkdir -p seqs
-    mkdir -p debug
-    goterms=$1
-    goterms=\"$goterms\"
-
-    #Downloads list of human genes used as conserved list
-    wget -o debug/index.txt -O seqs/index.txt --timeout=300 --tries=3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = "hsapiens_gene_ensembl" interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "external_gene_name" /> </Dataset> </Query>' > /dev/null
+    mkdir -p trees
+    mv tree\_$id.phy trees/tree\_$id.phy
+    
+    rm sequences.fa
+    rm msa.afa
 
 }
 
@@ -43,9 +35,6 @@ download_genesets()
     mkdir -p debug
     input="../data/dataSpecies.txt"
 
-    #Formats indexed gene list for data query
-    #csv_string=$(paste -sd, seqs/index.txt)
-    #csv_string="\"$csv_string\""
     while read -r species; do
 
         goterms=$1
@@ -94,17 +83,17 @@ download_genes()
     goterms=\"$goterms\"
 
     wget -b -o debug/$species.txt -O seqs/$species.fa --timeout=300 --tries=3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "peptide" /> <Attribute name = "ensembl_peptide_id" /> </Dataset> </Query>' > /dev/null
-    #if [ $dataset == "\"hsapiens_gene_ensembl\"" ]; then
-    #    wget -b -o debug/$species.txt -O seqs/$species.fa --timeout=300 --tries=3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = "hsapiens_gene_ensembl" interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "peptide" /> <Attribute name = "ensembl_peptide_id" /> </Dataset> </Query>' > /dev/null
-    #else
-        #wget -b -o debug/$species.txt -O seqs/$species.fa --timeout=300 --tries=3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = '$dataset' interface = "default" > <Filter name = "external_gene_name" value = '$csv_string'/> <Attribute name = "peptide" /> <Attribute name = "external_gene_name" /> </Dataset> </Query>' > /dev/null
-    #fi
 
 }
 
 format_files()
 {
     
+    #Create map of species name to lifespan value
+    while read -r line; do 
+        declare "$line" 
+    done < data/map_ml.txt
+
     for file in seqs/*.fa; do
         #Removes any unavailable sequences
         grep -v "Sequence unavailable" $file > temp.fa
@@ -124,7 +113,7 @@ format_files()
         species="${species:5}"
         species="$(echo $species | cut -f1 -d"_")"
         
-        grep -v "^>" $file | awk -v id="$species" 'BEGIN { ORS=""; print ">"id"\n" } { print }' | tr -d '*' >> sequences.fa
+        grep -v "^>" $file | awk -v id="$species(${!species})" 'BEGIN { ORS=""; print ">"id"\n" } { print }' | tr -d '*' >> sequences.fa
         echo "" >> sequences.fa
         echo "" >> sequences.fa
     done
