@@ -8,6 +8,7 @@ from goatools import obo_parser
 import sys
 
 pd.options.mode.chained_assignment = None
+error_threshold = 5
 
 #Requires 1 input: output filename
 #Call: python GOAnalysis.py [Lifespan measure] [output filename]
@@ -58,7 +59,6 @@ mammals_and_birds = data[(data['Class']!='Reptilia') & (data['Class']!='Amphibia
 genned_data = data[data['Genome']==1]
 genned_data = genned_data.drop_duplicates(subset=['Common name'], keep="first")
 genned_data = genned_data.reset_index(drop=True)
-genned_data = genned_data.reindex([5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,4,1,2,0,3,24])
 
 oboDat = obo_parser.GODag('data/go-basic.obo')
 
@@ -71,18 +71,23 @@ go_df = pd.DataFrame(columns=['GO ID', 'GO Definition', 'Median Gene #', 'Spearm
 if not os.path.exists('output'):
     os.makedirs('output')
 
+error = 0
 for filename in all_files:
 
     #Reads and formats data for data export
     #Drops reptiles from dataset
     try:
         genned_data[filename[path_len:-4]] = pd.read_csv(filename, sep='\t', header = None).values
-        coef, p = spearmanr(genned_data[life_measure].drop([44,45]), genned_data[filename[path_len:-4]].drop([44,45]))
+        coef, p = spearmanr(genned_data[life_measure], genned_data[filename[path_len:-4]])
 
         go_df.loc[len(go_df)] = ["GO:"+filename[path_len:-4], oboDat["GO:"+filename[path_len:-4]].name, np.median(genned_data[filename[path_len:-4]]), coef, p]
 
     except:
         print('Error: %s contains a wrong number of terms. Term skipped.' % filename)
+        error += 1
+
+    if error > error_threshold:
+        print('Too many errors; aborted process')
 
 print('Found %i term(s) to output.' % len(go_df))
 go_df.to_csv('output/' + out_filename, sep='\t')
