@@ -1,4 +1,4 @@
-HouseCanary=0.415154887
+CommonCanary=0.415154887
 Budgerigar=0.252916667
 LesserHedgehogTenrec=0.12242268
 Cow=0.017681268

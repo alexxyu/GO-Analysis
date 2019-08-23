@@ -56,9 +56,9 @@ This will generate an output file in data/filteredTerms.txt that can be used for
 
 #### Counting Genes Under Each GO Term for All Species
 
-Run the countAllGO.sh script. The two arguments that it takes are the path to the file containing GO terms to count and the output filename.
+Run the countAllGO.sh script. The three arguments that it takes are the path to the file containing GO terms to count, the output filename, and the lifespan measurement (ML for maximum lifespan, NLa for normalized lifespan by alpha, and NLn1 for normalized lifespan by -1).
 ```
-./countAllGO.sh data/filteredTerms.txt sigGOTerms.txt
+./countAllGO.sh data/filteredTerms.txt sigGOTerms.txt NLa
 ```
 This will generate a directory of count data. For correlation analysis, it calls GOAnalysis.py, which calculates normalized lifespan based on a linear regression model between BMR/M and lifespan and then calculates Spearman's rank correlation coefficient with p-value. GOAnalysis.py will output an entire tab-delimited text file with counts, which can be analyzed in Python, R, etc.
 
@@ -67,13 +67,15 @@ This will generate a directory of count data. For correlation analysis, it calls
 ### Prerequisites
 * [wget](https://www.gnu.org/software/wget/) must be installed for sequence retrieval from Ensembl BioMart.
 * [Kalign](http://msa.sbc.su.se/cgi-bin/msa.cgi) must be installed for multiple sequence alignment.
-* Python 3.6 installed w/ numpy, pandas, goatools, scipy.
+* Python 3.6 installed w/ numpy, pandas, goatools, scipy, ete3.
 
 ### Instructions
 
-Run the gen_tree.sh script. It takes only the GO term that you want to use for sequences. Example:
+Run the gen_tree.sh script. It takes the GO term(s) that you want to use for sequences in comma separated format, the lifespan measurement you want to use (ml for maximum lifespan, nla for normalized lifespan by alpha, and nln1 for normalized lifespan by -1), and an optional filename ID. If no ID is specified, the program will assume that there is only one GO term and name the file accordingly. 
+
+Example:
 ```
-./gen_tree.sh GO:0004719
+./gen_tree.sh GO:0004719 nla test
 ```
 The script will output a phylogenetic tree in Newick format.
 
@@ -83,3 +85,4 @@ The script will output a phylogenetic tree in Newick format.
 * [PAL2NAL](http://www.bork.embl.de/pal2nal/) - Conversion tool for protein MSA to DNA sequences
 * [Ka/Ks Calculator](https://code.google.com/archive/p/kaks-calculator/)
 * [trimAl](http://trimal.cgenomics.org/) - Automated MSA trimming utility
+* [FastTree](http://www.microbesonline.org/fasttree/) - Maximum-likelihood phylogenetic tree generator

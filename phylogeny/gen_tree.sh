@@ -1,25 +1,43 @@
 #!/bin/bash
 #Must have kalign and wget installed.
 
-#Run using: ./gen_tree.sh [GO Term ID]
+#Run using: ./gen_tree.sh [GO Term ID] [lifespan measurement] [optional file id]
 
 get_data()
 {
 
     goterms=$1
-    id=${goterms:3}
+    if [ $# -lt 3 ] ; then
+        id="${goterms:3}"
+    else
+        id=$3
+    fi
+
+    if [[ "$2" == "nla" ]] ; then
+        map=data/map_nla.txt
+    elif [[ "$2" == "nln1" ]] ; then
+        map=data/map_nln1.txt
+    else
+        map=data/map_ml.txt
+    fi
 
     #Downloads and prepares data for MSA
     download_genesets $goterms
-    format_files
+    format_files $map
 
-    #Performs MSA using kalign and creates phylogenetic tree with MSA using Muscle
+    #Performs MSA using kalign and creates phylogenetic tree with MSA using FastTree
     kalign -in sequences.fa -format fasta -out msa.afa
     ./trimal -in msa.afa -out msa.afa -gappyout
-    ./muscle -maketree -in msa.afa -out tree\_$id.phy
+    cut -d ' ' -f 1 < msa.afa > temp.txt
+    mv temp.txt msa.afa
 
+    ./FastTree -quiet msa.afa > tree.nwk
+    python tree_to_png.py $2
+    
     mkdir -p trees
-    mv tree\_$id.phy trees/tree\_$id.phy
+    mkdir -p imgs
+    mv tree.nwk trees/tree\_$id.nwk
+    mv tree.png imgs/tree\_$id.png
     
     rm sequences.fa
     rm msa.afa
@@ -89,10 +107,11 @@ download_genes()
 format_files()
 {
     
+    map=$1
     #Create map of species name to lifespan value
     while read -r line; do 
         declare "$line" 
-    done < data/map_ml.txt
+    done < $map
 
     for file in seqs/*.fa; do
         #Removes any unavailable sequences
@@ -112,8 +131,10 @@ format_files()
         species="${file%.*}"
         species="${species:5}"
         species="$(echo $species | cut -f1 -d"_")"
+
+        numGenes=$(grep -c "^>" $file)
         
-        grep -v "^>" $file | awk -v id="$species(${!species})" 'BEGIN { ORS=""; print ">"id"\n" } { print }' | tr -d '*' >> sequences.fa
+        grep -v "^>" $file | awk -v id="$species--${!species}--$numGenes" 'BEGIN { ORS=""; print ">"id"\n" } { print }' | tr -d '*' >> sequences.fa
         echo "" >> sequences.fa
         echo "" >> sequences.fa
     done
@@ -134,7 +155,7 @@ convert_secs()
 
 start=$SECONDS
 
-get_data $1
+get_data $1 $2 $3
 
 end=$SECONDS
 elapsed=$(( end - start ))
