@@ -1,28 +1,27 @@
 #!/bin/bash
 #Must have kalign and wget installed.
 
-#Run using: ./gen_tree.sh [GO Term ID] [lifespan measurement] [optional file id]
-
 get_data()
 {
 
-    goterms=$1
-    if [ $# -lt 3 ] ; then
-        id="${goterms:3}"
+    if [ -z "$o_flag" ] && [ ! -z "$g_flag" ] ; then
+        id="${g_flag:3:7}"
     else
-        id=$3
+        id=$o_flag
     fi
 
-    if [[ "$2" == "nla" ]] ; then
+    echo "Output tree filename: tree_"$id".nwk" 
+
+    if [[ "$m_flag" == "nla" ]] ; then
         map=data/map_nla.txt
-    elif [[ "$2" == "nln1" ]] ; then
+    elif [[ "$m_flag" == "nln1" ]] ; then
         map=data/map_nln1.txt
     else
         map=data/map_ml.txt
     fi
 
     #Downloads and prepares data for MSA
-    download_genesets $goterms
+    download_genesets $g_flag
     format_files $map
 
     #Performs MSA using kalign and creates phylogenetic tree with MSA using FastTree
@@ -32,7 +31,7 @@ get_data()
     mv temp.txt msa.afa
 
     ./FastTree -quiet msa.afa > tree.nwk
-    python tree_to_png.py $2
+    python tree_to_png.py $d_flag $m_flag
     
     mkdir -p trees
     mkdir -p imgs
@@ -47,17 +46,29 @@ get_data()
 download_genesets()
 {
 
-    echo "Downloading sequence data..."
-
     mkdir -p seqs
     mkdir -p debug
     input="../data/dataSpecies.txt"
 
+    if [ ! -z "$g_flag" ]; then
+        echo "Downloading GO term sequence data..."
+        goterms=$1
+        goterms=\"$goterms\"
+    else
+        echo "Downloading specified gene sequence data..."
+        geneList=$(tr -s '\n' ',' < $l_flag | sed 's/.$//')
+        geneList=\"$geneList\"
+    fi
+
     while read -r species; do
 
-        goterms=$1
         dataset=$(python ../get_dataset.py $species)
-        download_genes $dataset $goterms
+
+        if [ ! -z "$g_flag" ]; then
+            download_genes $dataset $goterms
+        else
+            download_genes_by_list $dataset $geneList
+        fi
 
     done < "$input"
 
@@ -89,6 +100,19 @@ download_genesets()
 
 }
 
+download_genes_by_list()
+{
+
+    #Dataset name from Ensembl
+    dataset=$1
+    dataset=\"$dataset\"
+
+    geneList=$2
+
+    wget -b -o debug/$species.txt -O seqs/$species.fa --timeout=300 --tries=3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = '$dataset' interface = "default" > <Filter name = "external_gene_name" value = '$geneList'/> <Attribute name = "peptide" /> <Attribute name = "external_gene_name" /> </Dataset> </Query>' > /dev/null
+
+}
+
 download_genes()
 {
 
@@ -96,11 +120,9 @@ download_genes()
     dataset=$1
     dataset=\"$dataset\"
 
-    #GO terms must be separated by comma (no space)
     goterms=$2
-    goterms=\"$goterms\"
 
-    wget -b -o debug/$species.txt -O seqs/$species.fa --timeout=300 --tries=3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "peptide" /> <Attribute name = "ensembl_peptide_id" /> </Dataset> </Query>' > /dev/null
+    wget -b -o debug/$species.txt -O seqs/$species.fa --timeout=300 --tries=3 'http://www.ensembl.org/biomart/martservice?query=<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE Query> <Query virtualSchemaName = "default" formatter = "FASTA" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" completionStamp = "1"> <Dataset name = '$dataset' interface = "default" > <Filter name = "go_parent_term" value = '$goterms'/> <Attribute name = "peptide" /> <Attribute name = "external_gene_name" /> </Dataset> </Query>' > /dev/null
 
 }
 
@@ -123,6 +145,12 @@ format_files()
 
         #Sorts sequences based on header
         cat $file | grep "^>" | sort | while read ID ; do awk 'BEGIN{RS=">"; ORS="";} /^'${ID:1}'/{print ">" $0; exit(0);}' $file >> seqs/$species\_sorted.fa ; done
+
+        #Deletes duplicate genes
+        if [[ "$r_flag" == "true" ]]; then
+            awk '/^>/{f=!d[$1];d[$1]=1}f' seqs/$species\_sorted.fa > temp.fa
+            mv temp.fa seqs/$species\_sorted.fa
+        fi
     done
 
     > sequences.fa
@@ -131,6 +159,7 @@ format_files()
         species="${file%.*}"
         species="${species:5}"
         species="$(echo $species | cut -f1 -d"_")"
+        
 
         numGenes=$(grep -c "^>" $file)
         
@@ -153,9 +182,54 @@ convert_secs()
     printf "Elapsed time: %02d:%02d:%02d\n" $h $m $s
 }
 
+print_usage() {
+    echo "Usage: -d to disable color view in phylogeny tree"
+    echo "       -g to specify GO terms to use (overrides -l)"
+    echo "       -l to specify file from which to use gene list"
+    echo "       -m to specify lifespan measurement (default: maximum lifespan)"
+    echo "       -o to specify output filename id"
+    echo "       -r to remove duplicate sequences"
+    echo ""
+}
+
+validate_inputs() {
+
+    if [ ! -z "$l_flag" ] && [ ! -f "$l_flag" ]; then
+        echo "Specified gene list file does not exist."
+        exit 1
+    fi
+
+    if [ -z "$g_flag" ] && [ -z "$l_flag" ]; then
+        echo "Have to specify either GO term list or gene list filename."
+        exit 1
+    fi
+
+}
+
 start=$SECONDS
 
-get_data $1 $2 $3
+d_flag='true'   # disable color view in phylogeny tree
+g_flag=''       # specify GO terms to use
+l_flag=''       # specify gene list file to use
+m_flag='ml'     # specify lifespan measurement
+o_flag=''       # specify output filename id
+r_flag='false'  # remove duplicate genes
+
+while getopts 'dg:l:m:ro:' flag; do
+  case "${flag}" in
+    d) d_flag='false' ;;
+    g) g_flag="${OPTARG}" ;;
+    l) l_flag="${OPTARG}" ;;
+    m) m_flag="${OPTARG}" ;;
+    r) r_flag='true' ;;
+    o) o_flag="${OPTARG}" ;;
+    *) print_usage
+       exit 1 ;;
+  esac
+done
+
+validate_inputs
+get_data
 
 end=$SECONDS
 elapsed=$(( end - start ))

@@ -67,15 +67,16 @@ This will generate a directory of count data. For correlation analysis, it calls
 ### Prerequisites
 * [wget](https://www.gnu.org/software/wget/) must be installed for sequence retrieval from Ensembl BioMart.
 * [Kalign](http://msa.sbc.su.se/cgi-bin/msa.cgi) must be installed for multiple sequence alignment.
-* Python 3.6 installed w/ numpy, pandas, goatools, scipy, ete3.
+* Python 3.6 installed w/ numpy, pandas, ete3, matplotlib.
 
 ### Instructions
 
-Run the gen_tree.sh script. It takes the GO term(s) that you want to use for sequences in comma separated format, the lifespan measurement you want to use (ml for maximum lifespan, nla for normalized lifespan by alpha, and nln1 for normalized lifespan by -1), and an optional filename ID. If no ID is specified, the program will assume that there is only one GO term and name the file accordingly. 
+Run the gen_tree.sh script. You can use the -g flag to specify the list of comma separated GO terms you want to use, or the -l flag to specify a new line-delimited file of gene names. You can use -o to specify an output filename tag if desired. The -m flag takes the lifespan measurement you want to use (ml for maximum lifespan, nla for normalized lifespan by alpha, and nln1 for normalized lifespan by -1). Finally, -d disables color highlighting in the tree and -r removes duplicate sequences.
 
-Example:
+Examples:
 ```
-./gen_tree.sh GO:0004719 nla test
+./gen_tree.sh -dr -l ribosome_protein_list.txt -o ribosomal
+./gen_tree.sh -g GO:0055015,GO:0097091 -m nln1
 ```
 The script will output a phylogenetic tree in Newick format.
 
